@@ -1,5 +1,6 @@
 import { openDB } from "idb";
 export type Exercise = {
+  followUrl?: string;
   id: string;
   name: string;
   english: string;
@@ -13,14 +14,23 @@ export type Exercise = {
   note: string;
 };
 export type Plan = {
+  kind?: "calories";
+  followUrl?: string;
   id: string;
   name: string;
   week: number;
   day: string;
   exercises: Exercise[];
 };
-export type SetLog = { weight: number | null; reps: number; done: boolean };
+export type SetLog = {
+  weight: number | null;
+  reps: number;
+  done: boolean;
+  calories?: number | null;
+};
 export type Session = {
+  kind?: "calories";
+  followUrl?: string;
   id: string;
   planId: string;
   name: string;
@@ -29,11 +39,89 @@ export type Session = {
   exercises: (Exercise & { logs: SetLog[] })[];
 };
 export type State = {
+  mode?: TrainingMode;
+  wellness?: TrainingProfile;
+  bodyWeights?: BodyWeight[];
   plans: Plan[];
   sessions: Session[];
   restEnd: number | null;
   restDuration: number;
 };
+export type TrainingMode = "basketball" | "wellness";
+export type TrainingProfile = { plans: Plan[]; sessions: Session[] };
+export type BodyWeight = { date: string; kg: number; note: string };
+export function newFollowPlan(): Plan {
+  return {
+    id: crypto.randomUUID(),
+    kind: "calories",
+    name: "我的跟练训练",
+    week: 1,
+    day: "周一",
+    followUrl: "",
+    exercises: [
+      {
+        id: crypto.randomUUID(),
+        name: "跟练课程",
+        english: "",
+        sets: 1,
+        reps: 1,
+        unit: "次",
+        weight: null,
+        equipment: "自重",
+        rest: 60,
+        note: "按实际完成情况填写次数与消耗大卡。",
+      },
+    ],
+  };
+}
+export const profileOf = (state: State, mode: TrainingMode): TrainingProfile =>
+  mode === "wellness" ? state.wellness! : state;
+export function updateProfile(
+  state: State,
+  mode: TrainingMode,
+  update: (profile: TrainingProfile) => TrainingProfile,
+): State {
+  return mode === "wellness"
+    ? { ...state, wellness: update(state.wellness!) }
+    : { ...state, ...update(state) };
+}
+export function normalizeState(state: State): State {
+  return {
+    ...state,
+    mode: state.mode ?? "basketball",
+    wellness: state.wellness ?? { plans: [newFollowPlan()], sessions: [] },
+    bodyWeights: state.bodyWeights ?? [],
+  };
+}
+export function validFollowUrl(value: unknown): boolean {
+  if (value === undefined || value === "") return true;
+  if (typeof value !== "string" || value.length > 2048) return false;
+  try {
+    const u = new URL(value);
+    return (
+      ["https:", "http:"].includes(u.protocol) && !u.username && !u.password
+    );
+  } catch {
+    return false;
+  }
+}
+export function validWeightDate(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    Number.isFinite(Date.parse(value + "T00:00:00Z")) &&
+    new Date(value + "T00:00:00Z").toISOString().slice(0, 10) === value
+  );
+}
+export const caloriesOf = (session: Session) =>
+  session.exercises.reduce(
+    (n, e) =>
+      n +
+      e.logs
+        .filter((l) => l.done)
+        .reduce((sum, l) => sum + (l.calories ?? 0), 0),
+    0,
+  );
 const ex = (
   id: string,
   name: string,
@@ -207,6 +295,9 @@ export const defaultPlans: Plan[] = [1, 2].flatMap((week) => [
   },
 ]);
 export const initialState = (): State => ({
+  mode: "basketball",
+  wellness: { plans: [newFollowPlan()], sessions: [] },
+  bodyWeights: [],
   plans: structuredClone(defaultPlans),
   sessions: [],
   restEnd: null,
@@ -219,7 +310,8 @@ const db = () =>
     },
   });
 export async function readState(): Promise<State> {
-  return (await (await db()).get("app", "state")) ?? initialState();
+  const value = await (await db()).get("app", "state");
+  return value ? normalizeState(value) : initialState();
 }
 export async function writeState(state: State) {
   await (await db()).put("app", state, "state");
@@ -235,6 +327,8 @@ export function createSession(plan: Plan, sessions: Session[]): Session {
     id: crypto.randomUUID(),
     planId: plan.id,
     name: plan.name,
+    ...(plan.kind ? { kind: plan.kind } : {}),
+    ...(plan.followUrl ? { followUrl: plan.followUrl } : {}),
     startedAt: new Date().toISOString(),
     finishedAt: null,
     exercises: plan.exercises.map((e) => {
@@ -249,6 +343,7 @@ export function createSession(plan: Plan, sessions: Session[]): Session {
             null,
           reps: e.reps,
           done: false,
+          ...(plan.kind === "calories" ? { calories: null } : {}),
         })),
       };
     }),
@@ -274,6 +369,7 @@ function assertExercise(x: unknown): asserts x is Exercise {
     !["杠铃", "哑铃", "自重", "器械"].includes(x.equipment as string) ||
     (x.weight !== null && !num(x.weight, 0, 1000)) ||
     typeof x.note !== "string" ||
+    !validFollowUrl(x.followUrl) ||
     (x.side !== undefined && !["腿", "侧"].includes(x.side as string))
   )
     throw Error("动作字段无效，请使用导出的计划格式。");
@@ -290,6 +386,8 @@ export function validatePlans(x: unknown): Plan[] {
       !str(p.name) ||
       !num(p.week, 1, 52) ||
       !str(p.day) ||
+      (p.kind !== undefined && p.kind !== "calories") ||
+      !validFollowUrl(p.followUrl) ||
       !Array.isArray(p.exercises) ||
       !p.exercises.length ||
       p.exercises.length > 50
@@ -309,10 +407,10 @@ export function parseBackup(value: unknown): State {
   if (
     !obj(value) ||
     value.app !== "court-training" ||
-    value.version !== 1 ||
+    ![1, 2].includes(value.version as number) ||
     !obj(value.data)
   )
-    throw Error("不是受支持的 COURT v1 备份。");
+    throw Error("不是受支持的 COURT v1/v2 备份。");
   const s = value.data;
   validatePlans(s.plans);
   if (
@@ -330,6 +428,8 @@ export function parseBackup(value: unknown): State {
       ids.has(item.id) ||
       !str(item.planId) ||
       !str(item.name) ||
+      (item.kind !== undefined && item.kind !== "calories") ||
+      !validFollowUrl(item.followUrl) ||
       typeof item.startedAt !== "string" ||
       !Number.isFinite(Date.parse(item.startedAt)) ||
       (item.finishedAt !== null &&
@@ -351,16 +451,60 @@ export function parseBackup(value: unknown): State {
           !obj(l) ||
           (l.weight !== null && !num(l.weight, 0, 1000)) ||
           !num(l.reps, 1, 3600) ||
-          typeof l.done !== "boolean"
+          typeof l.done !== "boolean" ||
+          (l.calories !== undefined &&
+            l.calories !== null &&
+            !num(l.calories, 0, 10000))
         )
           throw Error("组记录无效。");
+    }
+  }
+  if (
+    s.mode !== undefined &&
+    !["basketball", "wellness"].includes(s.mode as string)
+  )
+    throw Error("训练模式无效。");
+  if (s.wellness !== undefined) {
+    if (!obj(s.wellness)) throw Error("跟练记录无效。");
+    // Reuse the same complete session validation without recursively including profiles.
+    parseBackup({
+      app: "court-training",
+      version: 1,
+      data: {
+        plans: s.wellness.plans,
+        sessions: s.wellness.sessions,
+        restEnd: null,
+        restDuration: 90,
+      },
+    });
+    if (
+      !(s.wellness.plans as Plan[]).every((p) => p.kind === "calories") ||
+      !(s.wellness.sessions as Session[]).every((p) => p.kind === "calories")
+    )
+      throw Error("跟练模式的记录类型无效。");
+  }
+  if (s.bodyWeights !== undefined) {
+    if (!Array.isArray(s.bodyWeights) || s.bodyWeights.length > 20000)
+      throw Error("体重记录无效。");
+    const days = new Set();
+    for (const entry of s.bodyWeights) {
+      if (
+        !obj(entry) ||
+        !validWeightDate(entry.date) ||
+        days.has(entry.date) ||
+        !num(entry.kg, 0.1, 500) ||
+        typeof entry.note !== "string" ||
+        entry.note.length > 1000
+      )
+        throw Error("体重记录的日期或数值无效。");
+      days.add(entry.date);
     }
   }
   return structuredClone(s) as State;
 }
 export const backup = (state: State) => ({
   app: "court-training",
-  version: 1,
+  version: 2,
   exportedAt: new Date().toISOString(),
   data: state,
 });

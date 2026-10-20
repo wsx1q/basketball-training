@@ -13,6 +13,7 @@ export function TemplateEditor({
 }) {
   const [draft, setDraft] = useState(() => structuredClone(plan));
   const [error, setError] = useState("");
+  const calories = draft.kind === "calories";
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     dialog.current?.showModal();
@@ -44,7 +45,9 @@ export function TemplateEditor({
           name: e.name.trim(),
           english: e.english.trim(),
           note: e.note.trim(),
+          followUrl: e.followUrl?.trim(),
         })),
+        followUrl: draft.followUrl?.trim(),
       };
       validatePlans([cleaned]);
       onSave(cleaned);
@@ -136,6 +139,20 @@ export function TemplateEditor({
             </select>
           </label>
         </div>
+        {calories && (
+          <label className="editor-link-field">
+            模板跟练链接
+            <input
+              type="url"
+              maxLength={2048}
+              value={draft.followUrl ?? ""}
+              placeholder="https://…"
+              onChange={(e) =>
+                setDraft((p) => ({ ...p, followUrl: e.target.value }))
+              }
+            />
+          </label>
+        )}
         <div className="editor-exercises">
           {draft.exercises.map((exercise, i) => (
             <fieldset key={exercise.id} className="editor-exercise">
@@ -258,39 +275,45 @@ export function TemplateEditor({
                     <option value="侧">每侧</option>
                   </select>
                 </label>
-                <label>
-                  器械
-                  <select
-                    value={exercise.equipment}
-                    onChange={(e) =>
-                      edit(exercise.id, {
-                        equipment: e.target.value as Exercise["equipment"],
-                      })
-                    }
-                  >
-                    {["杠铃", "哑铃", "自重", "器械"].map((eq) => (
-                      <option key={eq}>{eq}</option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  重量 kg
-                  <input
-                    type="number"
-                    min="0"
-                    max="1000"
-                    step="any"
-                    inputMode="decimal"
-                    placeholder="自重或沿用上次"
-                    value={exercise.weight ?? ""}
-                    onChange={(e) =>
-                      edit(exercise.id, {
-                        weight:
-                          e.target.value === "" ? null : Number(e.target.value),
-                      })
-                    }
-                  />
-                </label>
+                {!calories && (
+                  <label>
+                    器械
+                    <select
+                      value={exercise.equipment}
+                      onChange={(e) =>
+                        edit(exercise.id, {
+                          equipment: e.target.value as Exercise["equipment"],
+                        })
+                      }
+                    >
+                      {["杠铃", "哑铃", "自重", "器械"].map((eq) => (
+                        <option key={eq}>{eq}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {!calories && (
+                  <label>
+                    重量 kg
+                    <input
+                      type="number"
+                      min="0"
+                      max="1000"
+                      step="any"
+                      inputMode="decimal"
+                      placeholder="自重或沿用上次"
+                      value={exercise.weight ?? ""}
+                      onChange={(e) =>
+                        edit(exercise.id, {
+                          weight:
+                            e.target.value === ""
+                              ? null
+                              : Number(e.target.value),
+                        })
+                      }
+                    />
+                  </label>
+                )}
                 <label>
                   组间休息（秒）
                   <input
@@ -307,7 +330,9 @@ export function TemplateEditor({
                   />
                 </label>
                 <label className="full">
-                  动作说明 / RPE / 次数范围
+                  {calories
+                    ? "课程备注 / 次数说明"
+                    : "动作说明 / RPE / 次数范围"}
                   <textarea
                     rows={2}
                     maxLength={1000}
@@ -317,6 +342,20 @@ export function TemplateEditor({
                     }
                   />
                 </label>
+                {calories && (
+                  <label className="full">
+                    动作跟练链接
+                    <input
+                      type="url"
+                      maxLength={2048}
+                      value={exercise.followUrl ?? ""}
+                      placeholder="可选：单独动作的视频链接"
+                      onChange={(e) =>
+                        edit(exercise.id, { followUrl: e.target.value })
+                      }
+                    />
+                  </label>
+                )}
               </div>
             </fieldset>
           ))}
@@ -334,12 +373,12 @@ export function TemplateEditor({
                   id: crypto.randomUUID(),
                   name: "",
                   english: "",
-                  sets: 3,
-                  reps: 8,
+                  sets: calories ? 1 : 3,
+                  reps: calories ? 1 : 8,
                   unit: "次",
                   equipment: "自重",
                   weight: null,
-                  rest: 90,
+                  rest: calories ? 60 : 90,
                   note: "",
                 },
               ],
@@ -350,7 +389,9 @@ export function TemplateEditor({
           添加动作
         </button>
         <p className="editor-hint">
-          杠铃填写含杆总重，哑铃填写单只重量。重量留空表示自重或开始训练时沿用上次重量；次数范围可写在说明中。
+          {calories
+            ? "每组保留次数或秒数；消耗大卡在训练时按实际情况填写，不预设消耗。可保存课程及单独动作的跟练链接。"
+            : "杠铃填写含杆总重，哑铃填写单只重量。重量留空表示自重或开始训练时沿用上次重量；次数范围可写在说明中。"}
         </p>
         <div className="editor-footer">
           <span>仅保存在当前设备</span>

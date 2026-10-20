@@ -36,7 +36,16 @@ import {
   readState,
   validatePlans,
   volume,
+  caloriesOf,
+  newFollowPlan,
+  normalizeState,
+  profileOf,
+  updateProfile,
+  type TrainingMode,
+  type TrainingProfile,
+  type SetLog,
   writeState,
+  validFollowUrl,
   type State,
   type Session,
   type Plan,
@@ -45,6 +54,8 @@ import "./style.css";
 import { TemplateEditor } from "./TemplateEditor";
 import { usePushReminder } from "./push";
 import { PushSettings } from "./PushSettings";
+import { WeightTracker } from "./WeightTracker";
+import { FollowAlong } from "./FollowAlong";
 const fmt = (n: number) =>
   `${Math.floor(n / 60)
     .toString()
@@ -84,6 +95,36 @@ function App() {
     saveQueue = useRef(Promise.resolve()),
     alarmRef = useRef<number | null>(null),
     audio = useRef<AudioContext | null>(null);
+  const mode = state.mode ?? "basketball",
+    pink = mode === "wellness";
+  const { plans, sessions } = profileOf(state, mode);
+  function setTraining(update: (profile: TrainingProfile) => TrainingProfile) {
+    setState((s) => updateProfile(s, mode, update));
+  }
+  function switchMode(next: TrainingMode) {
+    if (next === mode) return;
+    if (
+      [...state.sessions, ...(state.wellness?.sessions ?? [])].some(
+        (s) => !s.finishedAt,
+      )
+    ) {
+      setMessage("请先结束当前训练，再切换版本。");
+      return;
+    }
+    const target = profileOf(state, next);
+    setState((s) => ({ ...s, mode: next, restEnd: null }));
+    setRestPaused(null);
+    setSelected(target.plans[0].id);
+    setWeek(target.plans[0].week);
+    setDetail(null);
+    setTab("训练");
+  }
+  useEffect(() => {
+    document.documentElement.dataset.theme = pink ? "pink" : "green";
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", pink ? "#b55380" : "#173d30");
+  }, [pink]);
   const push = usePushReminder(state.restEnd, loaded);
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -108,8 +149,9 @@ function App() {
     readState()
       .then((s) => {
         setState(s);
-        setSelected(s.plans[0].id);
-        setWeek(s.plans[0].week);
+        const profile = profileOf(s, s.mode ?? "basketball");
+        setSelected(profile.plans[0].id);
+        setWeek(profile.plans[0].week);
         setLoaded(true);
         readyRef.current = true;
       })
@@ -174,9 +216,9 @@ function App() {
       return () => clearTimeout(id);
     }
   }, [message]);
-  const active = state.sessions.find((s) => !s.finishedAt),
-    plan = state.plans.find((p) => p.id === selected) ?? state.plans[0],
-    finished = state.sessions.filter((s) => s.finishedAt),
+  const active = sessions.find((s) => !s.finishedAt),
+    plan = plans.find((p) => p.id === selected) ?? plans[0],
+    finished = sessions.filter((s) => s.finishedAt),
     done =
       active?.exercises.reduce(
         (n, e) => n + e.logs.filter((l) => l.done).length,
@@ -204,13 +246,9 @@ function App() {
       restEnd: Date.now() + seconds * 1000,
     }));
   }
-  function changeSet(
-    ei: number,
-    li: number,
-    patch: Partial<{ weight: number | null; reps: number; done: boolean }>,
-  ) {
+  function changeSet(ei: number, li: number, patch: Partial<SetLog>) {
     if (!active) return;
-    setState((s) => ({
+    setTraining((s) => ({
       ...s,
       sessions: s.sessions.map((se) =>
         se.id !== active.id
@@ -238,7 +276,7 @@ function App() {
       setMessage("已回到进行中的训练。");
       return;
     }
-    setState((s) => ({
+    setTraining((s) => ({
       ...s,
       sessions: [...s.sessions, createSession(p, s.sessions)],
     }));
@@ -248,7 +286,7 @@ function App() {
   }
   function addSet(exerciseIndex: number) {
     if (!active) return;
-    setState((s) => ({
+    setTraining((s) => ({
       ...s,
       sessions: s.sessions.map((session) =>
         session.id !== active.id || session.finishedAt
@@ -265,6 +303,7 @@ function App() {
                     weight: previous?.weight ?? null,
                     reps: previous?.reps ?? exercise.reps,
                     done: false,
+                    ...(pink ? { calories: null } : {}),
                   },
                 ];
                 return { ...exercise, sets: logs.length, logs };
@@ -276,16 +315,18 @@ function App() {
   function finish() {
     if (!active) return;
     setState((s) => ({
-      ...s,
+      ...updateProfile(s, mode, (p) => ({
+        ...p,
+        sessions:
+          done === 0
+            ? p.sessions.filter((x) => x.id !== active.id)
+            : p.sessions.map((x) =>
+                x.id === active.id
+                  ? { ...x, finishedAt: new Date().toISOString() }
+                  : x,
+              ),
+      })),
       restEnd: null,
-      sessions:
-        done === 0
-          ? s.sessions.filter((x) => x.id !== active.id)
-          : s.sessions.map((x) =>
-              x.id === active.id
-                ? { ...x, finishedAt: new Date().toISOString() }
-                : x,
-            ),
     }));
     setRestPaused(null);
     setMessage(
@@ -295,19 +336,27 @@ function App() {
     );
     setTab(done === 0 ? "训练" : "历史");
   }
-  async function importFile(file: File | undefined, mode: "plan" | "backup") {
+  async function importFile(
+    file: File | undefined,
+    fileType: "plan" | "backup",
+  ) {
     if (!file) return;
     try {
       if (file.size > 20 * 1024 * 1024)
         throw Error("文件过大，请选择 20 MB 以内的 JSON。");
       const value = JSON.parse(await file.text());
-      if (mode === "backup") setRestore(parseBackup(value));
+      if (fileType === "backup") setRestore(normalizeState(parseBackup(value)));
       else {
-        const plans = validatePlans(Array.isArray(value) ? value : value.plans);
-        setState((s) => ({ ...s, plans }));
-        setSelected(plans[0].id);
-        setWeek(plans[0].week);
-        setMessage(`已导入 ${plans.length} 个模板，历史记录已保留。`);
+        const imported = validatePlans(
+          Array.isArray(value) ? value : value.plans,
+        ).map((p) => ({
+          ...p,
+          kind: pink ? ("calories" as const) : undefined,
+        }));
+        setTraining((s) => ({ ...s, plans: imported }));
+        setSelected(imported[0].id);
+        setWeek(imported[0].week);
+        setMessage(`已导入 ${imported.length} 个模板，历史记录已保留。`);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "文件无法读取。");
@@ -316,18 +365,24 @@ function App() {
   const nav = [
     { name: "训练", label: "训练计划", icon: LayoutDashboard },
     { name: "历史", label: "训练历史", icon: History },
-    { name: "进步", label: "力量进步", icon: Activity },
+    { name: "进步", label: pink ? "体重变化" : "力量进步", icon: Activity },
     { name: "设置", label: "数据与设置", icon: Settings2 },
   ];
   const shown = active?.exercises ?? plan.exercises;
   return (
-    <div className={"app " + (active ? "active-session" : "")}>
+    <div
+      className={
+        "app " + (active ? "active-session " : "") + (pink ? "pink-mode" : "")
+      }
+    >
       <aside className="sidebar">
         <a className="brand" href="#" onClick={(e) => e.preventDefault()}>
           <span className="brandmark">◉</span> COURT
           <span className="branddot">.</span>
         </a>
-        <p className="brand-sub">篮球专项训练日志</p>
+        <p className="brand-sub">
+          {pink ? "女生版 · 跟练与体重" : "篮球专项训练日志"}
+        </p>
         <div className="nav-label">YOUR TRAINING</div>
         <nav>
           {nav.map((n) => (
@@ -383,16 +438,22 @@ function App() {
               <div className="eyebrow">BUILT ON EVERY REP</div>
               <h1>
                 {tab === "训练"
-                  ? "把训练，变成场上的优势。"
+                  ? pink
+                    ? "按自己的节奏，记录每次运动。"
+                    : "把训练，变成场上的优势。"
                   : tab === "历史"
                     ? "每一次努力，都有记录。"
                     : tab === "进步"
-                      ? "看见你的力量积累。"
+                      ? pink
+                        ? "记录体重，看看真实的变化。"
+                        : "看见你的力量积累。"
                       : "你的训练，由你保管。"}
               </h1>
               <p>
                 {tab === "训练"
-                  ? "专注这一组。让每一次起跳，都更有力量。"
+                  ? pink
+                    ? "收藏喜欢的跟练，记下次数和消耗大卡。"
+                    : "专注这一组。让每一次起跳，都更有力量。"
                   : tab === "历史"
                     ? "回顾训练细节，保持自己的节奏。"
                     : tab === "进步"
@@ -401,10 +462,31 @@ function App() {
               </p>
             </div>
             <span className="season">
-              BASKETBALL
+              {pink ? "MOVE WITH YOU" : "BASKETBALL"}
               <br />
               <b>TRAINING / 01</b>
             </span>
+          </div>
+          <div className="mode-switch-bar">
+            <div className="mode-switch" role="group" aria-label="训练版本">
+              <button
+                aria-pressed={!pink}
+                className={!pink ? "chosen" : ""}
+                disabled={!loaded}
+                onClick={() => switchMode("basketball")}
+              >
+                篮球版
+              </button>
+              <button
+                aria-pressed={pink}
+                className={pink ? "chosen" : ""}
+                disabled={!loaded}
+                onClick={() => switchMode("wellness")}
+              >
+                女生版 · 粉色跟练
+              </button>
+            </div>
+            <span>模板与记录分别保存</span>
           </div>
           {error && (
             <div role="alert" className="alert error">
@@ -442,13 +524,23 @@ function App() {
                   text="扎实完成每一组"
                 />
                 <Stat
-                  label="训练总负荷"
-                  value={(
-                    finished.reduce((n, s) => n + volume(s), 0) / 1000
-                  ).toFixed(1)}
-                  unit="t"
+                  label={pink ? "累计记录消耗" : "训练总负荷"}
+                  value={
+                    pink
+                      ? finished
+                          .reduce((n, s) => n + caloriesOf(s), 0)
+                          .toLocaleString()
+                      : (
+                          finished.reduce((n, s) => n + volume(s), 0) / 1000
+                        ).toFixed(1)
+                  }
+                  unit={pink ? "大卡" : "t"}
                   icon={<Flame />}
-                  text="按已完成组的重量 × 次数计算"
+                  text={
+                    pink
+                      ? "汇总已完成组手动填写的大卡"
+                      : "按已完成组的重量 × 次数计算"
+                  }
                 />
               </div>
               {tab === "训练" && (
@@ -456,13 +548,22 @@ function App() {
                   <section>
                     <div className="plan-banner">
                       <div>
-                        <span className="pill">两周专项周期</span>
-                        <h2>更强的下肢，更稳的对抗。</h2>
-                        <p>力量 · 弹跳 · 单腿稳定 · 核心控制</p>
+                        <span className="pill">
+                          {pink ? "我的跟练手账" : "两周专项周期"}
+                        </span>
+                        <h2>
+                          {pink
+                            ? "每一次运动，都值得被记录。"
+                            : "更强的下肢，更稳的对抗。"}
+                        </h2>
+                        <p>
+                          {pink
+                            ? "跟练链接 · 次数与大卡 · 体重变化"
+                            : "力量 · 弹跳 · 单腿稳定 · 核心控制"}
+                        </p>
                         <div className="banner-meta">
                           <span>
-                            <Dumbbell size={15} /> {state.plans.length}{" "}
-                            个训练模板
+                            <Dumbbell size={15} /> {plans.length} 个训练模板
                           </span>
                           <span>
                             <ShieldCheck size={15} /> 自动保存进度
@@ -473,11 +574,11 @@ function App() {
                         <div className="court-line" />
                         <div className="court-circle" />
                         <span>
-                          STAY
+                          {pink ? "MOVE" : "STAY"}
                           <br />
-                          IN THE
+                          {pink ? "WITH" : "IN THE"}
                           <br />
-                          <b>GAME.</b>
+                          <b>{pink ? "JOY." : "GAME."}</b>
                         </span>
                       </div>
                     </div>
@@ -485,23 +586,19 @@ function App() {
                       <h2>{active ? "进行中的训练" : "选择训练日"}</h2>
                       {!active && (
                         <div className="segmented">
-                          {[...new Set(state.plans.map((p) => p.week))].map(
-                            (w) => (
-                              <button
-                                key={w}
-                                className={week === w ? "chosen" : ""}
-                                onClick={() => {
-                                  setWeek(w);
-                                  const p = state.plans.find(
-                                    (p) => p.week === w,
-                                  );
-                                  if (p) setSelected(p.id);
-                                }}
-                              >
-                                第 {w} 周
-                              </button>
-                            ),
-                          )}
+                          {[...new Set(plans.map((p) => p.week))].map((w) => (
+                            <button
+                              key={w}
+                              className={week === w ? "chosen" : ""}
+                              onClick={() => {
+                                setWeek(w);
+                                const p = plans.find((p) => p.week === w);
+                                if (p) setSelected(p.id);
+                              }}
+                            >
+                              第 {w} 周
+                            </button>
+                          ))}
                         </div>
                       )}
                       {active && (
@@ -512,7 +609,7 @@ function App() {
                     </div>
                     {!active && (
                       <div className="plan-tabs">
-                        {state.plans
+                        {plans
                           .filter((p) => p.week === week)
                           .map((p) => (
                             <button
@@ -545,8 +642,10 @@ function App() {
                         <h2>{active?.name ?? plan.name}</h2>
                         <p>
                           {shown.length} 个动作 ·{" "}
-                          {shown.reduce((n, e) => n + e.sets, 0)} 组 · 杠铃含杆
-                          / 哑铃记单只重量
+                          {shown.reduce((n, e) => n + e.sets, 0)} 组 ·
+                          {pink
+                            ? "手动记录次数与大卡"
+                            : "杠铃含杆 / 哑铃记单只重量"}
                         </p>
                       </div>
                       {!active && (
@@ -574,6 +673,34 @@ function App() {
                         </button>
                       )}
                     </div>
+                    {pink && (
+                      <FollowAlong
+                        url={
+                          active
+                            ? (active.followUrl ?? "")
+                            : (plan.followUrl ?? "")
+                        }
+                        onSave={(followUrl) =>
+                          setTraining((p) =>
+                            active
+                              ? {
+                                  ...p,
+                                  sessions: p.sessions.map((s) =>
+                                    s.id === active.id
+                                      ? { ...s, followUrl }
+                                      : s,
+                                  ),
+                                }
+                              : {
+                                  ...p,
+                                  plans: p.plans.map((p) =>
+                                    p.id === plan.id ? { ...p, followUrl } : p,
+                                  ),
+                                },
+                          )
+                        }
+                      />
+                    )}
                     {active && (
                       <div className="session-progress">
                         <div>
@@ -589,7 +716,7 @@ function App() {
                     )}
                     <div className="exercise-list">
                       {shown.map((e, ei) => {
-                        const last = lastExercise(state.sessions, e.id);
+                        const last = lastExercise(sessions, e.id);
                         const logs = active?.exercises[ei].logs;
                         return (
                           <article className="exercise-card" key={e.id}>
@@ -600,7 +727,7 @@ function App() {
                               <div className="exercise-name">
                                 <h3>
                                   {e.name}
-                                  <span>{e.equipment}</span>
+                                  <span>{pink ? "跟练" : e.equipment}</span>
                                 </h3>
                                 <p>{e.english}</p>
                               </div>
@@ -621,21 +748,34 @@ function App() {
                                 {e.side ? ` / ${e.side}` : ""}
                               </span>
                               <span>
-                                {e.weight !== null
-                                  ? `${e.weight} kg`
-                                  : "自主选重 / 自重"}
+                                {pink
+                                  ? "消耗大卡手动填写"
+                                  : e.weight !== null
+                                    ? `${e.weight} kg`
+                                    : "自主选重 / 自重"}
                               </span>
                               <span>{e.note}</span>
                             </div>
+                            {e.followUrl && validFollowUrl(e.followUrl) && (
+                              <a
+                                className="exercise-follow"
+                                href={e.followUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                打开动作跟练 ↗
+                              </a>
+                            )}
                             <div className="last">
                               <History size={12} />
                               {last
                                 ? "上次：" +
                                   last.logs
                                     .filter((l) => l.done)
-                                    .map(
-                                      (l) =>
-                                        `${l.weight ?? "自重"}${l.weight === null ? "" : "kg"} × ${l.reps}${e.unit}`,
+                                    .map((l) =>
+                                      pink
+                                        ? `${l.reps}${e.unit} · ${l.calories ?? "未填"}大卡`
+                                        : `${l.weight ?? "自重"}${l.weight === null ? "" : "kg"} × ${l.reps}${e.unit}`,
                                     )
                                     .join(" / ")
                                 : "首次记录，从今天开始积累"}
@@ -645,9 +785,11 @@ function App() {
                                 <div className="set-labels">
                                   <span>组</span>
                                   <span>
-                                    {e.equipment === "哑铃"
-                                      ? "单只重量 kg"
-                                      : "重量 kg"}
+                                    {pink
+                                      ? "消耗大卡"
+                                      : e.equipment === "哑铃"
+                                        ? "单只重量 kg"
+                                        : "重量 kg"}
                                   </span>
                                   <span>
                                     {e.unit}
@@ -664,21 +806,34 @@ function App() {
                                   >
                                     <span className="set-number">{li + 1}</span>
                                     <input
-                                      aria-label={`${e.name}第${li + 1}组重量`}
+                                      aria-label={`${e.name}第${li + 1}组${pink ? "消耗大卡" : "重量"}`}
                                       type="number"
                                       inputMode="decimal"
                                       min="0"
-                                      max="1000"
-                                      step="0.5"
-                                      placeholder="自重/未设"
-                                      value={l.weight ?? ""}
+                                      max={pink ? 10000 : 1000}
+                                      step={pink ? "0.1" : "0.5"}
+                                      placeholder={
+                                        pink ? "未填写" : "自重/未设"
+                                      }
+                                      value={
+                                        (pink ? l.calories : l.weight) ?? ""
+                                      }
                                       onChange={(ev) => {
                                         const n =
                                           ev.target.value === ""
                                             ? null
                                             : Number(ev.target.value);
-                                        if (n === null || (n >= 0 && n <= 1000))
-                                          changeSet(ei, li, { weight: n });
+                                        if (
+                                          n === null ||
+                                          (n >= 0 && n <= (pink ? 10000 : 1000))
+                                        )
+                                          changeSet(
+                                            ei,
+                                            li,
+                                            pink
+                                              ? { calories: n }
+                                              : { weight: n },
+                                          );
                                       }}
                                     />
                                     <input
@@ -719,7 +874,11 @@ function App() {
                                       ? "已达 30 组上限"
                                       : "添加一组"}
                                   </button>
-                                  <span>仅本次训练 · 沿用上一组重量和次数</span>
+                                  <span>
+                                    {pink
+                                      ? "仅本次训练 · 大卡按实际填写"
+                                      : "仅本次训练 · 沿用上一组重量和次数"}
+                                  </span>
                                 </div>
                               </div>
                             )}
@@ -861,9 +1020,21 @@ function App() {
                       <span className="mini-label">TRAINING NOTES</span>
                       <h3>练得扎实，进步自然发生。</h3>
                       <ul>
-                        <li>杠铃重量包含杆，哑铃记录单只重量。</li>
-                        <li>每腿、每侧的次数分别完成后，再勾选整组。</li>
-                        <li>RPE 与原计划提示保留在动作下方。</li>
+                        <li>
+                          {pink
+                            ? "消耗大卡由你手动记录，不自动估算。"
+                            : "杠铃重量包含杆，哑铃记录单只重量。"}
+                        </li>
+                        <li>
+                          {pink
+                            ? "保留每组次数，未填写的大卡不计入合计。"
+                            : "每腿、每侧的次数分别完成后，再勾选整组。"}
+                        </li>
+                        <li>
+                          {pink
+                            ? "在“体重变化”中记录日期、体重和备注。"
+                            : "RPE 与原计划提示保留在动作下方。"}
+                        </li>
                       </ul>
                       <div className="note-foot">
                         <ShieldCheck size={15} /> 无云端同步 · 建议定期备份
@@ -943,7 +1114,9 @@ function App() {
                             </small>
                           </span>
                           <span>
-                            {volume(s).toLocaleString()} kg{" "}
+                            {pink
+                              ? `${caloriesOf(s).toLocaleString()} 大卡`
+                              : `${volume(s).toLocaleString()} kg`}{" "}
                             <ChevronRight size={18} />
                           </span>
                         </button>
@@ -952,35 +1125,43 @@ function App() {
                   )}
                 </section>
               )}
-              {tab === "进步" && (
-                <section className="panel">
-                  <div className="section-heading">
-                    <h2>力量进步曲线</h2>
-                    <select
-                      aria-label="选择曲线动作"
-                      value={chartId}
-                      onChange={(e) => setChartId(e.target.value)}
-                    >
-                      {[
-                        ...new Map(
-                          [
-                            ...state.plans.flatMap((p) => p.exercises),
-                            ...finished.flatMap((s) => s.exercises),
-                          ].map((e) => [e.id, e]),
-                        ).values(),
-                      ].map((e) => (
-                        <option key={e.id} value={e.id}>
-                          {e.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <ProgressChart sessions={finished} exerciseId={chartId} />
-                  <p className="muted">
-                    按每次训练中已完成组的最大重量（kg）显示；自重或未填写重量的组不计入曲线。哑铃为单只重量。
-                  </p>
-                </section>
-              )}
+              {tab === "进步" &&
+                (pink ? (
+                  <WeightTracker
+                    entries={state.bodyWeights ?? []}
+                    onChange={(bodyWeights) =>
+                      setState((s) => ({ ...s, bodyWeights }))
+                    }
+                  />
+                ) : (
+                  <section className="panel">
+                    <div className="section-heading">
+                      <h2>力量进步曲线</h2>
+                      <select
+                        aria-label="选择曲线动作"
+                        value={chartId}
+                        onChange={(e) => setChartId(e.target.value)}
+                      >
+                        {[
+                          ...new Map(
+                            [
+                              ...plans.flatMap((p) => p.exercises),
+                              ...finished.flatMap((s) => s.exercises),
+                            ].map((e) => [e.id, e]),
+                          ).values(),
+                        ].map((e) => (
+                          <option key={e.id} value={e.id}>
+                            {e.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <ProgressChart sessions={finished} exerciseId={chartId} />
+                    <p className="muted">
+                      按每次训练中已完成组的最大重量（kg）显示；自重或未填写重量的组不计入曲线。哑铃为单只重量。
+                    </p>
+                  </section>
+                ))}
               {tab === "设置" && (
                 <div className="settings-grid">
                   <PushSettings push={push} />
@@ -1054,11 +1235,11 @@ function App() {
                   <section className="panel">
                     <h2>训练计划</h2>
                     <p>
-                      共 {state.plans.length}{" "}
+                      共 {plans.length}{" "}
                       个训练模板。点击编辑可直接调整动作和训练参数，保存后用于后续训练。
                     </p>
                     <div className="template-list">
-                      {state.plans.map((p) => (
+                      {plans.map((p) => (
                         <div key={p.id}>
                           <div>
                             <b>{p.name}</b>
@@ -1079,10 +1260,19 @@ function App() {
                       ))}
                     </div>
                     <div className="button-row">
+                      {pink && (
+                        <button
+                          className="primary"
+                          onClick={() => setEditing(newFollowPlan())}
+                        >
+                          <Plus size={16} />
+                          新建跟练模板
+                        </button>
+                      )}
                       <button
                         className="secondary"
                         onClick={() =>
-                          download({ plans: state.plans }, "court-plans.json")
+                          download({ plans: plans }, "court-plans.json")
                         }
                       >
                         <ArrowDownToLine size={16} />
@@ -1198,9 +1388,11 @@ function App() {
           plan={editing}
           onCancel={() => setEditing(null)}
           onSave={(updated) => {
-            setState((s) => ({
+            setTraining((s) => ({
               ...s,
-              plans: s.plans.map((p) => (p.id === updated.id ? updated : p)),
+              plans: s.plans.some((p) => p.id === updated.id)
+                ? s.plans.map((p) => (p.id === updated.id ? updated : p))
+                : [...s.plans, updated],
             }));
             setWeek(updated.week);
             setSelected(updated.id);
@@ -1222,6 +1414,11 @@ function App() {
               备份包含 {restore.plans.length} 个模板、{restore.sessions.length}{" "}
               条训练记录。确认后将替换当前设备的全部训练数据，此操作无法撤销。
             </p>
+            <p>
+              另外包含 {restore.wellness?.plans.length ?? 0} 个跟练模板、
+              {restore.wellness?.sessions.length ?? 0} 条跟练记录及{" "}
+              {restore.bodyWeights?.length ?? 0} 条体重记录。
+            </p>
             <div className="button-row">
               <button
                 className="secondary"
@@ -1238,8 +1435,12 @@ function App() {
                 className="primary"
                 onClick={() => {
                   setState(restore);
-                  setSelected(restore.plans[0].id);
-                  setWeek(restore.plans[0].week);
+                  const profile = profileOf(
+                    restore,
+                    restore.mode ?? "basketball",
+                  );
+                  setSelected(profile.plans[0].id);
+                  setWeek(profile.plans[0].week);
                   setRestore(null);
                   setRestPaused(null);
                   setMessage("备份已恢复。");
@@ -1270,6 +1471,16 @@ function App() {
               {new Date(detail.startedAt).toLocaleString("zh-CN")}
             </div>
             <h2>{detail.name}</h2>
+            {detail.followUrl && validFollowUrl(detail.followUrl) && (
+              <a
+                className="exercise-follow"
+                href={detail.followUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                打开本次跟练 ↗
+              </a>
+            )}
             {detail.exercises.map((e) => (
               <div className="detail-exercise" key={e.id}>
                 <h3>{e.name}</h3>
@@ -1277,7 +1488,14 @@ function App() {
                 {e.logs.map((l, i) => (
                   <span key={i} className={l.done ? "finished-set" : ""}>
                     {l.done ? "✓" : "○"} 第 {i + 1} 组：
-                    {l.weight === null ? "自重/未设" : `${l.weight} kg`} ×{" "}
+                    {detail.kind === "calories" ? (
+                      `${l.calories ?? "未填写"} 大卡 · `
+                    ) : (
+                      <>
+                        {l.weight === null ? "自重/未设" : `${l.weight} kg`}{" "}
+                        ×{" "}
+                      </>
+                    )}{" "}
                     {l.reps} {e.unit}
                     {e.side ? ` / ${e.side}` : ""}
                   </span>
