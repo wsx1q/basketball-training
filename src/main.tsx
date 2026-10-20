@@ -15,6 +15,7 @@ import {
   Pause,
   Play,
   Plus,
+  Pencil,
   RotateCcw,
   Settings2,
   ShieldCheck,
@@ -40,6 +41,7 @@ import {
   type Plan,
 } from "./data";
 import "./style.css";
+import { TemplateEditor } from "./TemplateEditor";
 const fmt = (n: number) =>
   `${Math.floor(n / 60)
     .toString()
@@ -71,6 +73,7 @@ function App() {
     [now, setNow] = useState(Date.now()),
     [restPaused, setRestPaused] = useState<number | null>(null),
     [restore, setRestore] = useState<State | null>(null),
+    [editing, setEditing] = useState<Plan | null>(null),
     [detail, setDetail] = useState<Session | null>(null),
     [chartId, setChartId] = useState("squat"),
     [saving, setSaving] = useState(false);
@@ -499,10 +502,22 @@ function App() {
                         </p>
                       </div>
                       {!active && (
-                        <button className="primary" onClick={() => begin(plan)}>
-                          <Play size={16} />
-                          开始训练
-                        </button>
+                        <div className="workout-actions">
+                          <button
+                            className="secondary"
+                            onClick={() => setEditing(plan)}
+                          >
+                            <Pencil size={15} />
+                            编辑模板
+                          </button>
+                          <button
+                            className="primary"
+                            onClick={() => begin(plan)}
+                          >
+                            <Play size={16} />
+                            开始训练
+                          </button>
+                        </div>
                       )}
                     </div>
                     {active && (
@@ -959,10 +974,30 @@ function App() {
                   <section className="panel">
                     <h2>训练计划</h2>
                     <p>
-                      已内置你提供的 4
-                      个训练模板。导入只替换模板，训练历史保留。相同动作沿用相同
-                      ID，才能关联上次记录。
+                      共 {state.plans.length}{" "}
+                      个训练模板。点击编辑可直接调整动作和训练参数，保存后用于后续训练。
                     </p>
+                    <div className="template-list">
+                      {state.plans.map((p) => (
+                        <div key={p.id}>
+                          <div>
+                            <b>{p.name}</b>
+                            <small>
+                              第 {p.week} 周 · {p.day} · {p.exercises.length}{" "}
+                              个动作
+                            </small>
+                          </div>
+                          <button
+                            className="secondary"
+                            aria-label={`编辑${p.name}`}
+                            onClick={() => setEditing(p)}
+                          >
+                            <Pencil size={14} />
+                            编辑
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                     <div className="button-row">
                       <button
                         className="secondary"
@@ -987,8 +1022,8 @@ function App() {
                       </label>
                     </div>
                     <p className="muted">
-                      按导出的 JSON
-                      编辑动作、组数、次数、重量与休息秒数。没有给定重量的动作保留空值，不替你指定负重。
+                      也可导入 / 导出 JSON
+                      计划。导入只替换模板，训练历史保留。编辑后的模板会包含在完整备份中。
                     </p>
                   </section>
                   <section className="panel install-panel">
@@ -1068,6 +1103,22 @@ function App() {
           <Check size={18} />
           {message}
         </div>
+      )}
+      {editing && (
+        <TemplateEditor
+          plan={editing}
+          onCancel={() => setEditing(null)}
+          onSave={(updated) => {
+            setState((s) => ({
+              ...s,
+              plans: s.plans.map((p) => (p.id === updated.id ? updated : p)),
+            }));
+            setWeek(updated.week);
+            setSelected(updated.id);
+            setEditing(null);
+            setMessage("模板已更新，下次训练使用新设置。");
+          }}
+        />
       )}
       {restore && (
         <div className="modal-backdrop">
