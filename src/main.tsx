@@ -274,17 +274,26 @@ function App() {
     }));
   }
   function finish() {
-    if (!active || !done) return;
+    if (!active) return;
     setState((s) => ({
       ...s,
       restEnd: null,
-      sessions: s.sessions.map((x) =>
-        x.id === active.id ? { ...x, finishedAt: new Date().toISOString() } : x,
-      ),
+      sessions:
+        done === 0
+          ? s.sessions.filter((x) => x.id !== active.id)
+          : s.sessions.map((x) =>
+              x.id === active.id
+                ? { ...x, finishedAt: new Date().toISOString() }
+                : x,
+            ),
     }));
     setRestPaused(null);
-    setMessage(`训练已保存，完成 ${done} 组。`);
-    setTab("历史");
+    setMessage(
+      done === 0
+        ? "本次训练已取消，未保存记录。"
+        : `训练已保存，完成 ${done} 组。`,
+    );
+    setTab(done === 0 ? "训练" : "历史");
   }
   async function importFile(file: File | undefined, mode: "plan" | "backup") {
     if (!file) return;
@@ -558,6 +567,12 @@ function App() {
                           </button>
                         </div>
                       )}
+                      {active && (
+                        <button className="secondary" onClick={finish}>
+                          <X size={16} />
+                          结束训练
+                        </button>
+                      )}
                     </div>
                     {active && (
                       <div className="session-progress">
@@ -717,18 +732,16 @@ function App() {
                         <div>
                           <b>今天的努力，值得记录。</b>
                           <p>
-                            {done === total
-                              ? "所有组已完成，可以收工了。"
-                              : "未完成的组会保留为未完成。"}
+                            {done === 0
+                              ? "尚未完成任何组，可直接结束，不计入历史。"
+                              : done === total
+                                ? "所有组已完成，可以收工了。"
+                                : "未完成的组会保留为未完成。"}
                           </p>
                         </div>
-                        <button
-                          className="primary"
-                          disabled={!done}
-                          onClick={finish}
-                        >
-                          <Check size={17} />
-                          结束并保存
+                        <button className="primary" onClick={finish}>
+                          {done ? <Check size={17} /> : <X size={17} />}
+                          {done ? "结束并保存" : "取消本次训练"}
                         </button>
                       </div>
                     )}

@@ -268,3 +268,46 @@ test("训练临时加组：继承输入、离线保存、备份与历史保留�
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(390);
 });
+
+test("误开训练可直接结束：不留空历史、刷新不恢复，有完成组正常保存", async ({
+  page,
+  context,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+  });
+  await page.getByRole("button", { name: "开始训练", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "结束训练", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "结束训练", exact: true }),
+  ).toBeInViewport();
+  await page.getByRole("button", { name: "结束训练", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "开始训练", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("footer")).toContainText("数据仅保存在当前设备");
+  await context.setOffline(true);
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "开始训练", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".session-progress")).toHaveCount(0);
+  await page.getByRole("button", { name: "历史", exact: true }).click();
+  await expect(page.locator(".history-list>button")).toHaveCount(0);
+  await page.getByRole("button", { name: "训练", exact: true }).click();
+  await page.getByRole("button", { name: "开始训练", exact: true }).click();
+  await page
+    .getByRole("button", { name: "完成杠铃深蹲第1组", exact: true })
+    .click();
+  await page.getByRole("button", { name: "结束训练", exact: true }).click();
+  await expect(page.locator(".history-list>button")).toHaveCount(1);
+  await page.getByRole("button", { name: "训练", exact: true }).click();
+  await page.getByRole("button", { name: "开始训练", exact: true }).click();
+  await page.getByRole("button", { name: "取消本次训练", exact: true }).click();
+  await page.getByRole("button", { name: "历史", exact: true }).click();
+  await expect(page.locator(".history-list>button")).toHaveCount(1);
+});

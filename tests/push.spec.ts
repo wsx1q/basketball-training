@@ -48,6 +48,12 @@ test("推送开关、安排、暂停取消、网络错误和重连", async ({ pa
   expect(jobs.at(-1)?.dueAt).toBeGreaterThan(Date.now() + 5000);
   await page.getByRole("button", { name: "训练计划", exact: true }).click();
   await page.getByRole("button", { name: "开始训练", exact: true }).click();
+  await page.getByRole("button", { name: "开始休息", exact: true }).click();
+  await expect(page.locator(".push-link")).toContainText("已安排");
+  await page.getByRole("button", { name: "结束训练", exact: true }).click();
+  await expect(page.locator(".push-link")).toContainText("后台通知已开启");
+  expect(jobs.at(-1)?.dueAt).toBeNull();
+  await page.getByRole("button", { name: "开始训练", exact: true }).click();
   await page
     .getByRole("button", { name: "完成杠铃深蹲第1组", exact: true })
     .click();
