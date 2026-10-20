@@ -1868,3 +1868,71 @@ select {
     padding: 14px;
   }
 }
+.push-settings .card-label {
+  gap: 10px;
+}
+.push-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #eef3e6;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.push-light {
+  height: 7px;
+  width: 7px;
+  border-radius: 50%;
+  background: #a6ad9e;
+  flex-shrink: 0;
+}
+.push-light.on {
+  background: #5e8952;
+}
+.push-failure {
+  color: #a35d37 !important;
+  font-size: 10px !important;
+  line-height: 1.8;
+  display: block;
+  margin-top: 8px;
+}
+.push-link {
+  background: none;
+  color: #57764a;
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  line-height: 1.9;
+  margin-top: 9px;
+  padding: 5px;
+}
+.push-settings .button-row {
+  margin-top: 15px;
+}
+@media (max-width: 650px) {
+  .mobile-rest > span {
+    min-width: 0;
+  }
+  .mobile-rest-label {
+    min-width: 0;
+  }
+  .mobile-rest-label small {
+    display: block;
+    font-size: 8px;
+    font-weight: 400;
+    color: #d1dfbf;
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 190px;
+  }
+  .mobile-rest-label {
+    display: block;
+    flex: 1;
+  }
+}

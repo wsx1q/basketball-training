@@ -1,0 +1,6 @@
+{
+  "name": "court-rest-push-wsx1997125",
+  "pages_build_output_dir": "./public",
+  "compatibility_date": "2026-10-19",
+  "services": [{ "binding": "PUSH", "service": "court-rest-push" }],
+}

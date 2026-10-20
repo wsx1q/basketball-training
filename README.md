@@ -1,6 +1,6 @@
 # COURT · 篮球专项训练 PWA
 
-React + TypeScript + Vite，适配 Windows 与 iPhone。无需账户，所有训练数据只保存在设备的 IndexedDB；应用不含统计分析 SDK 或个人数据上传接口。GitHub Pages 仅提供静态资源。
+React + TypeScript + Vite，适配 Windows 与 iPhone。无需账户，所有训练记录只保存在设备的 IndexedDB；应用不含统计分析 SDK，不上传训练记录。GitHub Pages 提供静态资源；可选的 Cloudflare 推送服务仅接收通知订阅、随机设备凭证、提醒版本与到期时间。
 
 ## Windows 开发
 
@@ -36,7 +36,27 @@ pnpm preview
 3. 从主屏幕启动，保持联网，等顶部显示“离线已就绪”。
 4. 开启飞行模式后再次打开，确认可以查看计划和记录训练。
 
-应用通过 Workbox 预缓存 HTML、JS、CSS 与 PNG 图标，不依赖外部字体或 CDN。升级提供手动更新提示，避免训练中突然刷新。倒计时保存结束时间，后台暂停 JS 后，回到前台会重算剩余时间；iOS 锁屏后台声音／震动不保证触发，前台显示与声音仍可用。
+应用通过 Workbox 预缓存 HTML、JS、CSS 与 PNG 图标，不依赖外部字体或 CDN。升级提供手动更新提示，避免训练中突然刷新。倒计时保存结束时间，后台暂停 JS 后，回到前台会重算剩余时间。后台通知需按下述步骤单独开启，离线时本地训练仍可用，但联网通知无法保证按时送达。
+
+## 联网后台休息通知
+
+1. iPhone 使用 iOS 16.4 或更新版本，从主屏幕启动已安装的 COURT（普通 Safari 标签页不支持此推送订阅流程）。
+2. 打开“数据与设置 → 后台休息提醒”，点击“开启后台通知”，在系统弹窗里允许通知。
+3. 点击“10 秒后测试通知”，切去看视频或锁屏，确认系统通知实际出现。未收到时检查设置 → 通知 → COURT 的允许通知、横幅、声音与专注模式。
+4. 正式训练勾选一组或开始休息后，等待界面显示“已安排”，再切去后台。暂停、重置、选择休息预设或结束训练都会取消旧提醒；继续计时或完成下一组会替换旧提醒。
+
+推送订阅设置只属于当前设备，不包含在训练备份中；换手机需重新授权。关闭后台通知会取消提醒并退订。网络失败会明确提示，恢复联网自动重试同步；取消时断网可能仍收到之前已安排的提醒，需联网重试取消。通知已进入系统推送链路后无法保证撤回。
+
+提醒服务：`https://court-rest-push-wsx1997125.pages.dev`。入口通过 Cloudflare Pages service binding 调用 Workers，关闭 Workers 直连入口。Cloudflare SQLite Durable Object 为每个随机设备凭证设置一个一次性 alarm，避免依赖被 iOS 暂停的网页计时器。发送／取消后移除订阅地址和加密密钥；剩余状态最多一小时后删除。不会接收动作名、重量、组数、训练历史或备份文件。推送消息固定为“休息结束”，有效期 60 秒，临时错误最多重试两次；网络和系统通知策略可能引入延迟，不承诺秒级送达。
+
+### 部署提醒服务
+
+```powershell
+pnpm exec wrangler login
+pnpm push:deploy
+```
+
+配置位于 `push-server/wrangler.jsonc`，在自己的账户部署需修改 account_id、Worker 名称、允许来源与应用 URL，同时修改前端 `VITE_PUSH_API`（可通过构建环境变量覆盖）和 `push-server/gateway/wrangler.jsonc` 的项目名、service 绑定。新账户需先创建对应的 Pages 网关项目。首次部署脚本自动生成 VAPID 密钥，只将公钥写入配置，私钥通过 stdin 写入 Cloudflare Secret，不落文件、不提交 Git。之后重新部署复用密钥，不会让现有订阅失效。提醒服务独立部署，GitHub Actions 仍只构建和发布 PWA。测试命令 `pnpm test` 含提醒校验、加密、取消、乱序更新、重试及清理测试；`pnpm test:e2e` 含前端提醒流程与 Service Worker 处理测试；`pnpm test:push-runtime` 在实际 Workers runtime 中验证 SQLite alarm、加密发送与取消；`node scripts/smoke-push.mjs` 验证线上安排与取消，不向真实设备发通知。
 
 ## JSON 备份与迁移
 

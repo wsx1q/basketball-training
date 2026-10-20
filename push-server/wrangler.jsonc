@@ -1,0 +1,29 @@
+{
+  "name": "court-rest-push",
+  "main": "worker.js",
+  "account_id": "d808ec97c5957d9b0fca4e88e5978d6b",
+  "compatibility_date": "2026-10-19",
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "REMINDERS",
+        "class_name": "RestReminder",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["RestReminder"],
+    },
+  ],
+  "observability": {
+    "enabled": false,
+  },
+  "vars": {
+    "VAPID_PUBLIC_KEY": "BDkqXFzXFfSalFydnSWkKEny-L9ZZ4w3t8YVJiGiY6DrCnkescfCItCHsQBSqCxEcP7ka2Lm6jKlWq3y6FFWXWc",
+  },
+}

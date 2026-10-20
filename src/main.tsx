@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Activity,
+  Bell,
   ArrowDownToLine,
   ArrowUpFromLine,
   ArrowUpRight,
@@ -42,6 +43,8 @@ import {
 } from "./data";
 import "./style.css";
 import { TemplateEditor } from "./TemplateEditor";
+import { usePushReminder } from "./push";
+import { PushSettings } from "./PushSettings";
 const fmt = (n: number) =>
   `${Math.floor(n / 60)
     .toString()
@@ -81,6 +84,15 @@ function App() {
     saveQueue = useRef(Promise.resolve()),
     alarmRef = useRef<number | null>(null),
     audio = useRef<AudioContext | null>(null);
+  const push = usePushReminder(state.restEnd, loaded);
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const handle = (event: MessageEvent) => {
+      if (event.data?.type === "COURT_OPEN_TRAINING") setTab("训练");
+    };
+    navigator.serviceWorker.addEventListener("message", handle);
+    return () => navigator.serviceWorker.removeEventListener("message", handle);
+  }, []);
   const {
     offlineReady: [offlineReady],
     needRefresh: [needRefresh],
@@ -777,7 +789,18 @@ function App() {
                       <p className="timer-note">
                         勾选完成一组，自动开始对应休息。
                         <br />
-                        iPhone 锁屏时提醒可能受系统限制。
+                        <button
+                          className="push-link"
+                          onClick={() => setTab("设置")}
+                        >
+                          <Bell size={12} />
+                          {push.enabled
+                            ? push.status
+                            : "开启后台通知，看视频时也能收到提醒"}
+                        </button>
+                        {push.failure && (
+                          <span className="push-failure">{push.failure}</span>
+                        )}
                       </p>
                     </div>
                     <div className="note-card">
@@ -906,6 +929,7 @@ function App() {
               )}
               {tab === "设置" && (
                 <div className="settings-grid">
+                  <PushSettings push={push} />
                   <section className="panel">
                     <div className="card-label">
                       <ShieldCheck />
@@ -913,7 +937,7 @@ function App() {
                     </div>
                     <p>
                       训练记录保存在这台设备的 IndexedDB
-                      中，不上传个人数据。清除网站数据、卸载或系统回收存储可能导致记录丢失，请定期备份。
+                      中，不上传训练记录。清除网站数据、卸载或系统回收存储可能导致记录丢失，请定期备份。
                     </p>
                     <div className="settings-item">
                       <div>
@@ -1080,7 +1104,16 @@ function App() {
         <div className="mobile-rest">
           <span>
             <Timer size={16} />
-            组间休息
+            <span className="mobile-rest-label">
+              组间休息
+              <small>
+                {push.enabled
+                  ? push.failure
+                    ? "联网提醒未同步，请重试"
+                    : push.status
+                  : "后台通知未开启"}
+              </small>
+            </span>
           </span>
           <strong>{fmt(remaining)}</strong>
           <button
