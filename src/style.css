@@ -2158,17 +2158,17 @@ select {
   margin-top: 25px;
 }
 html[data-theme="pink"] {
-  background: #fff2f7;
+  background: #ffd6e8;
 }
 .pink-mode {
-  background: #fff2f7;
+  background: linear-gradient(150deg, #ffd6e8 0%, #ffe2ef 55%, #ffcde3 100%);
   color: #633c51;
 }
 .pink-mode .sidebar,
 .pink-mode header,
 .pink-mode .mobile-nav {
-  background: #fff8fb;
-  border-color: #ecd5e0;
+  background: #ffe5f0;
+  border-color: #f3afcf;
 }
 .pink-mode .brand,
 .pink-mode h1,
@@ -2193,8 +2193,8 @@ html[data-theme="pink"] {
 }
 .pink-mode .nav.active,
 .pink-mode .nav:hover {
-  background: #f5dfe9;
-  color: #a04e74;
+  background: #ffbfdc;
+  color: #9d285f;
 }
 .pink-mode .nav-dot {
   background: #bb6b92;
@@ -2205,8 +2205,8 @@ html[data-theme="pink"] {
 .pink-mode .timer-card,
 .pink-mode .backup-shortcut,
 .pink-mode .plan-tabs > button {
-  background: #fffbfd;
-  border-color: #ecd5e1;
+  background: #fff0f7;
+  border-color: #f1b1ce;
 }
 .pink-mode .stat-top svg,
 .pink-mode .card-label > svg,
@@ -2214,7 +2214,7 @@ html[data-theme="pink"] {
   color: #b76b91;
 }
 .pink-mode .plan-banner {
-  background: linear-gradient(125deg, #a64f7b, #c9759d);
+  background: linear-gradient(125deg, #bc2d70, #e34991);
   color: white;
 }
 .pink-mode .plan-banner h2 {
@@ -2240,24 +2240,24 @@ html[data-theme="pink"] {
   color: #f8cce055;
 }
 .pink-mode .primary {
-  background: #af527e;
-  border-color: #af527e;
+  background: #c62c76;
+  border-color: #c62c76;
   color: #fff8fc;
 }
 .pink-mode .primary:hover {
-  background: #96446b;
+  background: #ac1f62;
 }
 .pink-mode .secondary {
-  background: #fff8fc;
-  border-color: #e9cadb;
+  background: #ffe0ef;
+  border-color: #efabcb;
   color: #a05079;
 }
 .pink-mode .secondary:hover {
   background: #fae5ef;
 }
 .pink-mode .mode-switch {
-  background: #f6e0eb;
-  border-color: #eccddd;
+  background: #ffc5df;
+  border-color: #f0a6c8;
 }
 .pink-mode .mode-switch button {
   color: #ad7b94;
@@ -2275,20 +2275,20 @@ html[data-theme="pink"] {
   color: #a17b90 !important;
 }
 .pink-mode .plan-tabs > button.selected {
-  border-color: #c880a3;
-  background: #fff0f7;
+  border-color: #df6ba2;
+  background: #ffd6e9;
 }
 .pink-mode .day-icon,
 .pink-mode .exercise-index,
 .pink-mode .exercise-name h3 > span,
 .pink-mode .privacy,
 .pink-mode .avatar {
-  background: #f9e5ef;
-  border-color: #edd3e1;
-  color: #ba7a9b;
+  background: #ffd1e5;
+  border-color: #efa8ca;
+  color: #a83a70;
 }
 .pink-mode .segmented {
-  background: #f6e2ec;
+  background: #ffd1e5;
 }
 .pink-mode .segmented button {
   color: #b7849e;
@@ -2318,7 +2318,7 @@ html[data-theme="pink"] {
   color: #85536d;
 }
 .pink-mode .set-row.done {
-  background: #fbe4ef;
+  background: #ffcce3;
 }
 .pink-mode .check-set {
   background: #f9e3ee;
@@ -2326,15 +2326,15 @@ html[data-theme="pink"] {
   color: #cc9bb4;
 }
 .pink-mode .done .check-set {
-  background: #b35983;
-  border-color: #b35983;
+  background: #c62c76;
+  border-color: #c62c76;
   color: white;
 }
 .pink-mode .track {
   background: #f4d9e6;
 }
 .pink-mode .track i {
-  background: #be6c94;
+  background: #dc4b91;
 }
 .pink-mode .session-progress > div:first-child {
   color: #a45e81;
@@ -2343,7 +2343,7 @@ html[data-theme="pink"] {
   stroke: #f4dfeb;
 }
 .pink-mode .timer-face circle + circle {
-  stroke: #c178a2;
+  stroke: #dc4b91;
 }
 .pink-mode .timer-presets button.chosen {
   background: #f8dfea;
@@ -2363,12 +2363,12 @@ html[data-theme="pink"] {
 .pink-mode .note-card,
 .pink-mode .install-panel,
 .pink-mode .template-fields {
-  background: #fbe6ef;
-  border-color: #efd4e2;
+  background: #ffd7e9;
+  border-color: #efa8ca;
 }
 .pink-mode .modal,
 .pink-mode .editor-footer {
-  background: #fff8fb;
+  background: #ffe8f2;
   color: #74465d;
 }
 .pink-mode .editor-exercise {
@@ -2385,7 +2385,7 @@ html[data-theme="pink"] {
 }
 .pink-mode .mobile-rest,
 .pink-mode .toast {
-  background: #a94e79;
+  background: #bb2c6d;
 }
 .pink-mode .chart text {
   fill: #a0758b;
