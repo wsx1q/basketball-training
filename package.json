@@ -23,6 +23,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "fake-indexeddb": "^6.0.0",
+    "prettier": "^3.9.10",
     "sharp": "^0.33.5",
     "typescript": "~5.7.2",
     "vite": "^6.0.5",

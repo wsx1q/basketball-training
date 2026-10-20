@@ -1,31 +1,84 @@
-import {test,expect} from '@playwright/test';
-test('真实训练、刷新持久化、计时、历史、曲线与离线',async({page,context})=>{
- const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('/');await expect(page.getByRole('button',{name:'开始训练',exact:true})).toBeVisible();
- await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
- await page.getByRole('button',{name:'开始训练',exact:true}).click();
- await page.getByRole('spinbutton',{name:'杠铃深蹲第1组重量',exact:true}).fill('67.5');
- await page.getByRole('button',{name:'完成杠铃深蹲第1组',exact:true}).click();
- await expect(page.locator('.timer-face strong')).toHaveText(/02:5\d|03:00/);
- await expect(page.getByRole('button',{name:'取消完成杠铃深蹲第1组',exact:true})).toHaveAttribute('aria-pressed','true');
- await page.waitForTimeout(300);await page.reload();
- await expect(page.getByRole('spinbutton',{name:'杠铃深蹲第1组重量',exact:true})).toHaveValue('67.5');
- await expect(page.getByRole('button',{name:'取消完成杠铃深蹲第1组',exact:true})).toBeVisible();
- await page.getByRole('button',{name:'结束并保存',exact:true}).click();
- await expect(page.locator('.history-list>button')).toHaveCount(1);
- await page.locator('.history-list>button').click();await expect(page.getByRole('dialog')).toContainText('67.5 kg × 5');await page.getByRole('button',{name:'关闭详情'}).click();
- await page.getByRole('button',{name:'力量进步',exact:true}).click();await expect(page.getByRole('img',{name:'每次训练最大完成重量曲线'})).toBeVisible();await expect(page.locator('.chart-summary')).toContainText('67.5');
- await context.setOffline(true);await page.reload();await expect(page.getByRole('button',{name:'开始训练',exact:true})).toBeVisible();await page.getByRole('button',{name:'训练历史',exact:true}).click();await expect(page.locator('.history-list>button')).toHaveCount(1);
- expect(errors).toEqual([]);await context.setOffline(false);
+import { test, expect } from "@playwright/test";
+test("真实训练、刷新持久化、计时、历史、曲线与离线", async ({
+  page,
+  context,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "开始训练", exact: true }),
+  ).toBeVisible();
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+  });
+  await page.getByRole("button", { name: "开始训练", exact: true }).click();
+  await page
+    .getByRole("spinbutton", { name: "杠铃深蹲第1组重量", exact: true })
+    .fill("67.5");
+  await page
+    .getByRole("button", { name: "完成杠铃深蹲第1组", exact: true })
+    .click();
+  await expect(page.locator(".timer-face strong")).toHaveText(/02:5\d|03:00/);
+  await expect(
+    page.getByRole("button", { name: "取消完成杠铃深蹲第1组", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.waitForTimeout(300);
+  await page.reload();
+  await expect(
+    page.getByRole("spinbutton", { name: "杠铃深蹲第1组重量", exact: true }),
+  ).toHaveValue("67.5");
+  await expect(
+    page.getByRole("button", { name: "取消完成杠铃深蹲第1组", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "结束并保存", exact: true }).click();
+  await expect(page.locator(".history-list>button")).toHaveCount(1);
+  await page.locator(".history-list>button").click();
+  await expect(page.getByRole("dialog")).toContainText("67.5 kg × 5");
+  await page.getByRole("button", { name: "关闭详情" }).click();
+  await page.getByRole("button", { name: "力量进步", exact: true }).click();
+  await expect(
+    page.getByRole("img", { name: "每次训练最大完成重量曲线" }),
+  ).toBeVisible();
+  await expect(page.locator(".chart-summary")).toContainText("67.5");
+  await context.setOffline(true);
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "开始训练", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "训练历史", exact: true }).click();
+  await expect(page.locator(".history-list>button")).toHaveCount(1);
+  expect(errors).toEqual([]);
+  await context.setOffline(false);
 });
-test('移动端布局、备份导出与恢复及恶意文件校验',async({page})=>{
- await page.setViewportSize({width:390,height:844});await page.goto('/');
- await expect(page.getByRole('button',{name:'开始训练',exact:true})).toBeVisible();
- expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
- await page.getByRole('button',{name:'设置',exact:true}).click();
- const d=page.waitForEvent('download');await page.getByRole('button',{name:'导出 JSON',exact:true}).click();const file=await d;expect(file.suggestedFilename()).toMatch(/court-backup/);
- const path=await file.path();await page.locator('input[type=file]').first().setInputFiles(path!);await expect(page.getByRole('dialog')).toContainText('4 个模板');await page.getByRole('button',{name:'确认替换并恢复'}).click();
- await page.locator('input[type=file]').first().setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{"version":999}')});await expect(page.getByRole('alert')).toContainText('不是受支持');
- await page.getByRole('button',{name:'关闭错误'}).click();await page.getByRole('button',{name:'训练',exact:true}).click();
- await page.screenshot({path:'test-results/mobile.png',fullPage:true});
+test("移动端布局、备份导出与恢复及恶意文件校验", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "开始训练", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+  await page.getByRole("button", { name: "设置", exact: true }).click();
+  const d = page.waitForEvent("download");
+  await page.getByRole("button", { name: "导出 JSON", exact: true }).click();
+  const file = await d;
+  expect(file.suggestedFilename()).toMatch(/court-backup/);
+  const path = await file.path();
+  await page.locator("input[type=file]").first().setInputFiles(path!);
+  await expect(page.getByRole("dialog")).toContainText("4 个模板");
+  await page.getByRole("button", { name: "确认替换并恢复" }).click();
+  await page
+    .locator("input[type=file]")
+    .first()
+    .setInputFiles({
+      name: "invalid.json",
+      mimeType: "application/json",
+      buffer: Buffer.from('{"version":999}'),
+    });
+  await expect(page.getByRole("alert")).toContainText("不是受支持");
+  await page.getByRole("button", { name: "关闭错误" }).click();
+  await page.getByRole("button", { name: "训练", exact: true }).click();
+  await page.screenshot({ path: "test-results/mobile.png", fullPage: true });
 });
