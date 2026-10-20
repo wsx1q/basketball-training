@@ -246,6 +246,33 @@ function App() {
     setTab("训练");
     void navigator.storage?.persist?.();
   }
+  function addSet(exerciseIndex: number) {
+    if (!active) return;
+    setState((s) => ({
+      ...s,
+      sessions: s.sessions.map((session) =>
+        session.id !== active.id || session.finishedAt
+          ? session
+          : {
+              ...session,
+              exercises: session.exercises.map((exercise, index) => {
+                if (index !== exerciseIndex || exercise.logs.length >= 30)
+                  return exercise;
+                const previous = exercise.logs.at(-1);
+                const logs = [
+                  ...exercise.logs,
+                  {
+                    weight: previous?.weight ?? null,
+                    reps: previous?.reps ?? exercise.reps,
+                    done: false,
+                  },
+                ];
+                return { ...exercise, sets: logs.length, logs };
+              }),
+            },
+      ),
+    }));
+  }
   function finish() {
     if (!active || !done) return;
     setState((s) => ({
@@ -665,6 +692,20 @@ function App() {
                                     </button>
                                   </div>
                                 ))}
+                                <div className="set-footer">
+                                  <button
+                                    className="secondary add-set"
+                                    aria-label={`给${e.name}添加一组`}
+                                    disabled={logs.length >= 30}
+                                    onClick={() => addSet(ei)}
+                                  >
+                                    <Plus size={15} />
+                                    {logs.length >= 30
+                                      ? "已达 30 组上限"
+                                      : "添加一组"}
+                                  </button>
+                                  <span>仅本次训练 · 沿用上一组重量和次数</span>
+                                </div>
                               </div>
                             )}
                           </article>

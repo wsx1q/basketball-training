@@ -192,3 +192,79 @@ test("移动端编辑可取消、增删和排序动作，保存后写入备份",
     fullPage: false,
   });
 });
+
+test("训练临时加组：继承输入、离线保存、备份与历史保留，模板不变", async ({
+  page,
+  context,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+  });
+  await page.getByRole("button", { name: "开始训练", exact: true }).click();
+  await page
+    .getByRole("spinbutton", { name: "杠铃深蹲第3组重量", exact: true })
+    .fill("72.5");
+  await page
+    .getByRole("spinbutton", { name: "杠铃深蹲第3组次", exact: true })
+    .fill("6");
+  await page
+    .getByRole("button", { name: "给杠铃深蹲添加一组", exact: true })
+    .click();
+  await expect(
+    page.getByRole("spinbutton", { name: "杠铃深蹲第4组重量", exact: true }),
+  ).toHaveValue("72.5");
+  await expect(
+    page.getByRole("spinbutton", { name: "杠铃深蹲第4组次", exact: true }),
+  ).toHaveValue("6");
+  await expect(
+    page.getByRole("button", { name: "完成杠铃深蹲第4组", exact: true }),
+  ).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator(".session-progress")).toContainText("0 / 12");
+  await expect(page.locator(".timer-face small")).toHaveText("准备好下一组");
+  await page
+    .getByRole("button", { name: "完成杠铃深蹲第4组", exact: true })
+    .click();
+  await expect(page.locator(".session-progress")).toContainText("1 / 12");
+  await expect(page.locator("footer")).toContainText("数据仅保存在当前设备");
+  await context.setOffline(true);
+  await page.reload();
+  await expect(
+    page.getByRole("spinbutton", { name: "杠铃深蹲第4组重量", exact: true }),
+  ).toHaveValue("72.5");
+  await expect(
+    page.getByRole("button", { name: "取消完成杠铃深蹲第4组", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "结束并保存", exact: true }).click();
+  await page.locator(".history-list>button").click();
+  await expect(page.getByRole("dialog")).toContainText("第 4 组：72.5 kg × 6");
+  await page.screenshot({ path: "test-results/added-set-history.png" });
+  expect(
+    (await page.getByRole("dialog").boundingBox())!.width,
+  ).toBeLessThanOrEqual(350);
+  await page.getByRole("button", { name: "关闭详情" }).click();
+  await page.getByRole("button", { name: "进步", exact: true }).click();
+  await expect(page.locator(".chart-summary")).toContainText("72.5");
+  await page.getByRole("button", { name: "设置", exact: true }).click();
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "导出 JSON", exact: true }).click();
+  const file = await download;
+  await page
+    .locator("input[type=file]")
+    .first()
+    .setInputFiles((await file.path())!);
+  await expect(page.getByRole("dialog")).toContainText("1 条训练记录");
+  await page.getByRole("button", { name: "确认替换并恢复" }).click();
+  await page.getByRole("button", { name: "训练", exact: true }).click();
+  await page.getByRole("button", { name: "开始训练", exact: true }).click();
+  await expect(
+    page.getByRole("spinbutton", { name: "杠铃深蹲第3组重量", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("spinbutton", { name: "杠铃深蹲第4组重量", exact: true }),
+  ).toHaveCount(0);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+});

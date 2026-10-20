@@ -1149,6 +1149,7 @@ select {
   background: #14291e77;
   z-index: 40;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: 20px;
   backdrop-filter: blur(3px);
@@ -1156,6 +1157,7 @@ select {
 .modal {
   width: 560px;
   max-width: 100%;
+  min-width: 0;
   max-height: 85dvh;
   overflow: auto;
   background: #fafbf5;
@@ -1934,5 +1936,28 @@ select {
   .mobile-rest-label {
     display: block;
     flex: 1;
+  }
+}
+.set-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.set-footer > span {
+  font-size: 9px;
+  color: #96a38b;
+}
+.add-set {
+  min-height: 42px;
+}
+@media (max-width: 650px) {
+  .set-footer > span {
+    font-size: 8px;
+  }
+  .add-set {
+    font-size: 11px;
   }
 }
