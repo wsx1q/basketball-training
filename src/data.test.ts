@@ -1,0 +1,10 @@
+import 'fake-indexeddb/auto';
+import {beforeAll,describe,it,expect} from 'vitest';
+import {backup,createSession,defaultPlans,initialState,lastExercise,parseBackup,readState,validatePlans,writeState,volume} from './data';
+describe('正式计划、持久化与迁移',()=>{
+ it('精确保留四份计划的组数与负重',()=>{expect(defaultPlans.map(p=>p.exercises.reduce((n,e)=>n+e.sets,0))).toEqual([11,14,12,15]);expect(defaultPlans[0].exercises[1].weight).toBe(65);expect(defaultPlans[2].exercises[1].weight).toBe(67.5);expect(defaultPlans[3].exercises[1].weight).toBe(42.5);expect(defaultPlans[3].exercises[5]).toMatchObject({unit:'秒',reps:20,side:'侧',note:'屈膝版本'});});
+ it('IndexedDB 保存草稿与勾选，完整备份能往返恢复',async()=>{const state=initialState();const s=createSession(state.plans[0],[]);s.exercises[1].logs[0]={weight:65,reps:5,done:true};state.sessions=[s];state.restEnd=Date.now()+90000;await writeState(state);expect(await readState()).toEqual(state);expect(parseBackup(JSON.parse(JSON.stringify(backup(state))))).toEqual(state);});
+ it('沿用上次非固定重量，固定重量仍按新周计划',()=>{const s=createSession(defaultPlans[0],[]);s.finishedAt=new Date().toISOString();s.exercises[1].logs[0]={weight:70,reps:5,done:true};s.exercises[2].logs[0]={weight:50,reps:8,done:true};const draft=createSession(defaultPlans[2],[s]);expect(draft.exercises[1].logs[0].weight).toBe(67.5);expect(draft.exercises[2].logs[0].weight).toBe(50);expect(lastExercise([s],'rdl')?.logs[0].weight).toBe(50);});
+ it('拒绝无效备份和计划，不让错误文件覆盖数据',()=>{const broken=backup(initialState());(broken.data.plans[0].exercises[0] as any).weight=-50;expect(()=>parseBackup(broken)).toThrow();expect(()=>parseBackup({version:2})).toThrow();expect(()=>validatePlans([])).toThrow();const dup=structuredClone(defaultPlans);dup.push(dup[0]);expect(()=>validatePlans(dup)).toThrow();const bad=initialState();const s=createSession(bad.plans[0],[]);s.exercises[0].logs[0].reps=0;bad.sessions=[s];expect(()=>parseBackup(backup(bad))).toThrow();});
+ it('训练量只统计完成组，自重不计，哑铃和每侧明确计算',()=>{const s=createSession(defaultPlans[1],[]);s.exercises[1].logs[0]={weight:40,reps:8,done:true};s.exercises[3].logs[0]={weight:5,reps:6,done:true};expect(volume(s)).toBe(440);});
+});
