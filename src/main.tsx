@@ -558,7 +558,9 @@ function App() {
                             <div className="exercise-info">
                               <span>
                                 {e.sets} 组 × {e.reps}
-                                {e.id === "pullup" && e.note.includes("6–8")
+                                {e.id === "pullup" &&
+                                e.reps === 6 &&
+                                e.note.includes("6–8")
                                   ? "–8"
                                   : ""}{" "}
                                 {e.unit}
