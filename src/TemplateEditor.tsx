@@ -16,7 +16,21 @@ export function TemplateEditor({
   const calories = draft.kind === "calories";
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    dialog.current?.showModal();
+    const element = dialog.current;
+    if (!element) return;
+    const scrollX = window.scrollX,
+      scrollY = window.scrollY;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    element.showModal();
+    element.scrollTop = 0;
+    element
+      .querySelector<HTMLButtonElement>('[aria-label="关闭模板编辑"]')
+      ?.focus({ preventScroll: true });
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.scrollTo({ left: scrollX, top: scrollY, behavior: "instant" });
+    };
   }, []);
   function edit(id: string, patch: Partial<Exercise>) {
     setDraft((p) => ({
@@ -92,7 +106,6 @@ export function TemplateEditor({
           <label className="wide">
             模板名称
             <input
-              autoFocus
               required
               maxLength={200}
               value={draft.name}

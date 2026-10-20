@@ -1714,6 +1714,10 @@ select {
   margin-top: 4px;
 }
 .template-editor {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  overscroll-behavior: contain;
   border: 1px solid #dce4d3;
   width: 820px;
   max-width: calc(100% - 24px);

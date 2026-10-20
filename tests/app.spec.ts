@@ -311,3 +311,46 @@ test("误开训练可直接结束：不留空历史、刷新不恢复，有完�
   await page.getByRole("button", { name: "历史", exact: true }).click();
   await expect(page.locator(".history-list>button")).toHaveCount(1);
 });
+
+test("从滚动位置打开模板编辑，弹窗固定在当前视口，关闭后保持位置", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "设置", exact: true }).click();
+  const edit = page.getByRole("button", {
+    name: "编辑第2周 周四｜上肢+单腿+核心",
+    exact: true,
+  });
+  await edit.scrollIntoViewIfNeeded();
+  const before = await page.evaluate(() => window.scrollY);
+  expect(before).toBeGreaterThan(300);
+  await edit.click();
+  const editor = page.getByRole("dialog", { name: "编辑训练模板" });
+  await expect(editor).toBeVisible();
+  const bounds = (await editor.boundingBox())!;
+  expect(bounds.y).toBeGreaterThanOrEqual(0);
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(844);
+  await expect(
+    page.getByRole("button", { name: "关闭模板编辑" }),
+  ).toBeInViewport();
+  await expect(page.getByLabel("模板名称", { exact: true })).not.toBeFocused();
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  await editor.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect(
+    editor.getByRole("button", { name: "保存模板", exact: true }),
+  ).toBeInViewport();
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  await editor.getByRole("button", { name: "取消", exact: true }).click();
+  await expect(editor).toHaveCount(0);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  await expect(edit).toBeInViewport();
+  await edit.click();
+  await expect(
+    page.getByRole("button", { name: "关闭模板编辑" }),
+  ).toBeInViewport();
+  await page.getByRole("button", { name: "关闭模板编辑" }).click();
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+});
