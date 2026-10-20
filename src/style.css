@@ -2158,27 +2158,27 @@ select {
   margin-top: 25px;
 }
 html[data-theme="pink"] {
-  background: #ffd6e8;
+  background: #fff2f7;
 }
 .pink-mode {
-  background: linear-gradient(150deg, #ffd6e8 0%, #ffe2ef 55%, #ffcde3 100%);
-  color: #633c51;
+  background: #fff2f7;
+  color: #633c43;
 }
 .pink-mode .sidebar,
 .pink-mode header,
 .pink-mode .mobile-nav {
-  background: #ffe5f0;
-  border-color: #f3afcf;
+  background: #ffe5e9;
+  border-color: #f3afba;
 }
 .pink-mode .brand,
 .pink-mode h1,
 .pink-mode h2,
 .pink-mode h3,
 .pink-mode .stat-value {
-  color: #753e5d;
+  color: #753e47;
 }
 .pink-mode .branddot {
-  color: #cf7ca4;
+  color: #cf7c8a;
 }
 .pink-mode .brand-sub,
 .pink-mode .nav-label,
@@ -2189,15 +2189,15 @@ html[data-theme="pink"] {
 .pink-mode .last,
 .pink-mode .rest-label,
 .pink-mode .section-heading > span {
-  color: #a17b8f;
+  color: #a17b81;
 }
 .pink-mode .nav.active,
 .pink-mode .nav:hover {
-  background: #ffbfdc;
-  color: #9d285f;
+  background: #ffbfca;
+  color: #9d283c;
 }
 .pink-mode .nav-dot {
-  background: #bb6b92;
+  background: #bb6b78;
 }
 .pink-mode .stat,
 .pink-mode .exercise-card,
@@ -2205,66 +2205,66 @@ html[data-theme="pink"] {
 .pink-mode .timer-card,
 .pink-mode .backup-shortcut,
 .pink-mode .plan-tabs > button {
-  background: #fff0f7;
-  border-color: #f1b1ce;
+  background: #fff0f3;
+  border-color: #f1b1bc;
 }
 .pink-mode .stat-top svg,
 .pink-mode .card-label > svg,
 .pink-mode .connection {
-  color: #b76b91;
+  color: #b76b78;
 }
 .pink-mode .plan-banner {
-  background: linear-gradient(125deg, #bc2d70, #e34991);
-  color: white;
+  background: linear-gradient(125deg, #ffb6c8, #ffcbd5);
+  color: #713342;
 }
 .pink-mode .plan-banner h2 {
-  color: #fff9fc;
+  color: #713342;
 }
 .pink-mode .plan-banner p,
 .pink-mode .banner-meta {
-  color: #f6dbe9;
+  color: #874452;
 }
 .pink-mode .pill {
-  color: #fff3fa;
-  border-color: #e6b1ce;
+  color: #713342;
+  border-color: #d67d90;
 }
 .pink-mode .court-art {
-  border-color: #f4c6dc66;
+  border-color: #f4c6ce66;
 }
 .pink-mode .court-circle,
 .pink-mode .court-line {
-  border-color: #f4c6dc66;
+  border-color: #f4c6ce66;
 }
 .pink-mode .court-art > span,
 .pink-mode .court-art b {
-  color: #f8cce055;
+  color: #f8ccd355;
 }
 .pink-mode .primary {
-  background: #c62c76;
-  border-color: #c62c76;
-  color: #fff8fc;
+  background: #c94360;
+  border-color: #c94360;
+  color: #ffffff;
 }
 .pink-mode .primary:hover {
-  background: #ac1f62;
+  background: #b93450;
 }
 .pink-mode .secondary {
-  background: #ffe0ef;
-  border-color: #efabcb;
-  color: #a05079;
+  background: #ffe0e5;
+  border-color: #efabb6;
+  color: #a0505d;
 }
 .pink-mode .secondary:hover {
-  background: #fae5ef;
+  background: #fae5e9;
 }
 .pink-mode .mode-switch {
-  background: #ffc5df;
-  border-color: #f0a6c8;
+  background: #ffc5cf;
+  border-color: #f0a6b2;
 }
 .pink-mode .mode-switch button {
-  color: #ad7b94;
+  color: #ad7b83;
 }
 .pink-mode .mode-switch button.chosen {
-  color: #a04e78;
-  background: #fffafd;
+  color: #a04e5c;
+  background: #fffafb;
 }
 .pink-mode .mode-switch-bar > span,
 .pink-mode .workout-title p,
@@ -2272,145 +2272,145 @@ html[data-theme="pink"] {
 .pink-mode .timer-note,
 .pink-mode .timer-face small,
 .pink-mode .muted {
-  color: #a17b90 !important;
+  color: #a17b81 !important;
 }
 .pink-mode .plan-tabs > button.selected {
-  border-color: #df6ba2;
-  background: #ffd6e9;
+  border-color: #df6b7e;
+  background: #ffd6dd;
 }
 .pink-mode .day-icon,
 .pink-mode .exercise-index,
 .pink-mode .exercise-name h3 > span,
 .pink-mode .privacy,
 .pink-mode .avatar {
-  background: #ffd1e5;
-  border-color: #efa8ca;
-  color: #a83a70;
+  background: #ffd1d9;
+  border-color: #efa8b4;
+  color: #a83a4c;
 }
 .pink-mode .segmented {
-  background: #ffd1e5;
+  background: #ffd1d9;
 }
 .pink-mode .segmented button {
-  color: #b7849e;
+  color: #b7848d;
 }
 .pink-mode .segmented button.chosen {
-  background: #fffafd;
-  color: #9d4c75;
+  background: #fffafb;
+  color: #9d4c5a;
 }
 .pink-mode .set-table,
 .pink-mode footer,
 .pink-mode .detail-exercise,
 .pink-mode .settings-item,
 .pink-mode .template-list > div {
-  border-color: #f0dbe5;
+  border-color: #f0dbde;
 }
 .pink-mode .set-labels,
 .pink-mode .set-number {
-  color: #aa7b95;
+  color: #aa7b83;
 }
 .pink-mode .set-row input,
 .pink-mode .editor-fields input,
 .pink-mode .editor-fields select,
 .pink-mode .editor-fields textarea,
 .pink-mode select {
-  background: #fff6fb;
-  border-color: #eccfdf;
-  color: #85536d;
+  background: #fff6f8;
+  border-color: #eccfd4;
+  color: #85535b;
 }
 .pink-mode .set-row.done {
-  background: #ffcce3;
+  background: #ffccd5;
 }
 .pink-mode .check-set {
-  background: #f9e3ee;
-  border-color: #ecccdc;
-  color: #cc9bb4;
+  background: #f9e3e7;
+  border-color: #ecccd1;
+  color: #cc9ba3;
 }
 .pink-mode .done .check-set {
-  background: #c62c76;
-  border-color: #c62c76;
+  background: #c62c46;
+  border-color: #c62c46;
   color: white;
 }
 .pink-mode .track {
-  background: #f4d9e6;
+  background: #f4d9de;
 }
 .pink-mode .track i {
-  background: #dc4b91;
+  background: #dc4b63;
 }
 .pink-mode .session-progress > div:first-child {
-  color: #a45e81;
+  color: #a45e6a;
 }
 .pink-mode .timer-face circle {
-  stroke: #f4dfeb;
+  stroke: #f4dfe3;
 }
 .pink-mode .timer-face circle + circle {
-  stroke: #dc4b91;
+  stroke: #dc4b63;
 }
 .pink-mode .timer-presets button.chosen {
-  background: #f8dfea;
-  border-color: #d59cb8;
-  color: #a7527c;
+  background: #f8dfe3;
+  border-color: #d59ca6;
+  color: #a75260;
 }
 .pink-mode .timer-presets button {
-  border-color: #ebd1df;
-  color: #b3869f;
+  border-color: #ebd1d5;
+  color: #b3868e;
 }
 .pink-mode .timer-face strong {
-  color: #934d71;
+  color: #934d59;
 }
 .pink-mode .push-link {
-  color: #a4567d;
+  color: #a45663;
 }
 .pink-mode .note-card,
 .pink-mode .install-panel,
 .pink-mode .template-fields {
-  background: #ffd7e9;
-  border-color: #efa8ca;
+  background: #ffd7de;
+  border-color: #efa8b4;
 }
 .pink-mode .modal,
 .pink-mode .editor-footer {
-  background: #ffe8f2;
-  color: #74465d;
+  background: #ffe8ec;
+  color: #74464e;
 }
 .pink-mode .editor-exercise {
-  border-color: #e9ccdc;
+  border-color: #e9ccd1;
 }
 .pink-mode .editor-fields label {
-  color: #a5758f;
+  color: #a5757d;
 }
 .pink-mode .push-status {
-  background: #f9e4ef;
+  background: #f9e4e8;
 }
 .pink-mode .mobile-nav button.active {
-  color: #ac527e;
+  color: #ac5261;
 }
 .pink-mode .mobile-rest,
 .pink-mode .toast {
-  background: #bb2c6d;
+  background: #bb2c44;
 }
 .pink-mode .chart text {
-  fill: #a0758b;
+  fill: #a0757c;
 }
 .pink-mode .empty {
-  color: #b18c9f;
+  color: #b18c92;
 }
 .pink-mode .empty h3 {
-  color: #a35b80;
+  color: #a35b67;
 }
 .pink-mode .profile > span {
-  background: #f7e0ed;
+  background: #f7e0e4;
 }
 .pink-mode .install-logo {
-  color: #d9aac3;
+  color: #d9aab2;
 }
 .pink-mode .detail-exercise > span.finished-set {
-  color: #a34d78;
+  color: #a34d5b;
 }
 .pink-mode .alert {
-  background: #f8dce9;
-  color: #934c70;
+  background: #f8dce1;
+  color: #934c58;
 }
 .pink-mode .push-light.on {
-  background: #bf6c96;
+  background: #bf6c7a;
 }
 @media (max-width: 650px) {
   .mode-switch-bar {
@@ -2472,7 +2472,7 @@ html[data-theme="pink"] {
     font-size: 20px;
   }
   .pink-mode .mobile-rest-label small {
-    color: #f7d8e8;
+    color: #f7d8dd;
   }
 }
 @media (max-width: 650px) {
@@ -2494,9 +2494,9 @@ html[data-theme="pink"] {
     font-size: 22px;
   }
   .pink-mode .mobile-nav button {
-    color: #b795aa;
+    color: #b7959b;
   }
   .pink-mode .mobile-nav button.active {
-    color: #ac527e;
+    color: #ac5261;
   }
 }
