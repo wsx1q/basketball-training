@@ -1,4 +1,5 @@
 import { openDB } from "idb";
+import { validColors, type ThemeColors } from "./ThemePalette";
 export type Exercise = {
   followUrl?: string;
   id: string;
@@ -39,6 +40,7 @@ export type Session = {
   exercises: (Exercise & { logs: SetLog[] })[];
 };
 export type State = {
+  themeColors?: ThemeColors;
   mode?: TrainingMode;
   wellness?: TrainingProfile;
   bodyWeights?: BodyWeight[];
@@ -412,6 +414,8 @@ export function parseBackup(value: unknown): State {
   )
     throw Error("不是受支持的 COURT v1/v2 备份。");
   const s = value.data;
+  if (s.themeColors !== undefined && !validColors(s.themeColors))
+    throw Error("备份配色无效，请使用六位十六进制颜色。");
   validatePlans(s.plans);
   if (
     !Array.isArray(s.sessions) ||

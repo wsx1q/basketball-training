@@ -56,6 +56,7 @@ import { usePushReminder } from "./push";
 import { PushSettings } from "./PushSettings";
 import { WeightTracker } from "./WeightTracker";
 import { FollowAlong } from "./FollowAlong";
+import { ThemePalette, paletteStyle } from "./ThemePalette";
 const fmt = (n: number) =>
   `${Math.floor(n / 60)
     .toString()
@@ -121,10 +122,15 @@ function App() {
   }
   useEffect(() => {
     document.documentElement.dataset.theme = pink ? "pink" : "green";
+    document.documentElement.style.background =
+      pink && state.themeColors ? state.themeColors.background : "";
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", pink ? "#b55380" : "#173d30");
-  }, [pink]);
+      ?.setAttribute(
+        "content",
+        pink ? (state.themeColors?.background ?? "#fff2f7") : "#173d30",
+      );
+  }, [pink, state.themeColors]);
   const push = usePushReminder(state.restEnd, loaded);
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -371,8 +377,11 @@ function App() {
   const shown = active?.exercises ?? plan.exercises;
   return (
     <div
+      style={pink ? paletteStyle(state.themeColors) : undefined}
       className={
-        "app " + (active ? "active-session " : "") + (pink ? "pink-mode" : "")
+        "app " +
+        (active ? "active-session " : "") +
+        (pink ? "pink-mode" + (state.themeColors ? " custom-colors" : "") : "")
       }
     >
       <aside className="sidebar">
@@ -1164,6 +1173,14 @@ function App() {
                 ))}
               {tab === "设置" && (
                 <div className="settings-grid">
+                  {pink && (
+                    <ThemePalette
+                      colors={state.themeColors}
+                      onChange={(themeColors) =>
+                        setState((s) => ({ ...s, themeColors }))
+                      }
+                    />
+                  )}
                   <PushSettings push={push} />
                   <section className="panel">
                     <div className="card-label">

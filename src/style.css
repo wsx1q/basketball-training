@@ -2157,6 +2157,38 @@ select {
 .weight-tracker .chart {
   margin-top: 25px;
 }
+.theme-palette {
+  grid-column: 1 / -1;
+}
+.palette-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin: 22px 0;
+}
+.palette-fields label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.palette-fields input[type="color"] {
+  width: 48px;
+  height: 48px;
+  padding: 3px;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.palette-fields small {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  font-family: monospace;
+}
 html[data-theme="pink"] {
   background: #fff2f7;
 }
@@ -2499,4 +2531,175 @@ html[data-theme="pink"] {
   .pink-mode .mobile-nav button.active {
     color: #ac5261;
   }
+}
+.pink-mode.custom-colors {
+  background: var(--palette-background);
+  color: var(--palette-text);
+}
+.pink-mode.custom-colors
+  :is(
+    .sidebar,
+    header,
+    .mobile-nav,
+    .stat,
+    .exercise-card,
+    .panel,
+    .timer-card,
+    .backup-shortcut,
+    .plan-tabs > button,
+    .modal,
+    .editor-footer
+  ) {
+  background: var(--palette-surface);
+  color: var(--palette-text);
+  border-color: color-mix(
+    in srgb,
+    var(--palette-accent) 28%,
+    var(--palette-surface)
+  );
+}
+.pink-mode.custom-colors
+  :is(
+    h1,
+    h2,
+    h3,
+    .brand,
+    .stat-value,
+    .timer-face strong,
+    .empty,
+    .empty h3,
+    .editor-fields label,
+    .set-number,
+    .set-labels,
+    .segmented button,
+    .mode-switch button,
+    .brand-sub,
+    .nav-label,
+    .eyebrow,
+    .stat-top,
+    .stat p,
+    .exercise-info,
+    .last,
+    .rest-label,
+    .section-heading > span,
+    .profile
+  ) {
+  color: var(--palette-text);
+}
+.pink-mode.custom-colors
+  :is(
+    .mode-switch-bar > span,
+    .workout-title p,
+    .exercise-name p,
+    .timer-note,
+    .timer-face small,
+    .muted
+  ) {
+  color: var(--palette-text) !important;
+}
+.pink-mode.custom-colors .plan-banner {
+  background: var(--palette-banner);
+  color: var(--palette-on-banner);
+}
+.pink-mode.custom-colors .plan-banner :is(h2, p, .banner-meta, .pill) {
+  color: var(--palette-on-banner);
+}
+.pink-mode.custom-colors .pill {
+  border-color: currentColor;
+}
+.pink-mode.custom-colors :is(.primary, .done .check-set, .mobile-rest, .toast) {
+  background: var(--palette-accent);
+  border-color: var(--palette-accent);
+  color: var(--palette-on-accent);
+}
+.pink-mode.custom-colors .primary:hover {
+  background: color-mix(in srgb, var(--palette-accent) 85%, #000);
+}
+.pink-mode.custom-colors
+  :is(
+    .secondary,
+    .nav.active,
+    .nav:hover,
+    .mode-switch,
+    .segmented,
+    .plan-tabs > button.selected,
+    .day-icon,
+    .exercise-index,
+    .exercise-name h3 > span,
+    .privacy,
+    .avatar,
+    .check-set,
+    .note-card,
+    .install-panel,
+    .template-fields,
+    .push-status,
+    .alert,
+    .timer-presets button.chosen,
+    .set-row.done
+  ) {
+  background: color-mix(
+    in srgb,
+    var(--palette-accent) 13%,
+    var(--palette-surface)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--palette-accent) 45%,
+    var(--palette-surface)
+  );
+  color: var(--palette-text);
+}
+.pink-mode.custom-colors
+  :is(
+    .set-row input,
+    .editor-fields input,
+    .editor-fields select,
+    .editor-fields textarea,
+    select,
+    .mode-switch button.chosen,
+    .segmented button.chosen
+  ) {
+  background: var(--palette-surface);
+  border-color: color-mix(
+    in srgb,
+    var(--palette-accent) 35%,
+    var(--palette-surface)
+  );
+  color: var(--palette-text);
+}
+.pink-mode.custom-colors
+  :is(
+    .branddot,
+    .stat-top svg,
+    .card-label > svg,
+    .connection,
+    .push-link,
+    .mobile-nav button.active,
+    .detail-exercise > span.finished-set
+  ) {
+  color: var(--palette-accent);
+}
+.pink-mode.custom-colors :is(.track i, .nav-dot, .push-light.on) {
+  background: var(--palette-accent);
+}
+.pink-mode.custom-colors .track {
+  background: color-mix(
+    in srgb,
+    var(--palette-accent) 20%,
+    var(--palette-surface)
+  );
+}
+.pink-mode.custom-colors .timer-face circle {
+  stroke: color-mix(in srgb, var(--palette-accent) 20%, var(--palette-surface));
+}
+.pink-mode.custom-colors .timer-face circle + circle {
+  stroke: var(--palette-accent);
+}
+.pink-mode.custom-colors .chart text {
+  fill: var(--palette-text);
+}
+.pink-mode.custom-colors .set-row.done .check-set {
+  background: var(--palette-accent);
+  border-color: var(--palette-accent);
+  color: var(--palette-on-accent);
 }
