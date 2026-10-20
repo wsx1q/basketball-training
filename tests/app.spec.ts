@@ -25,6 +25,7 @@ test("真实训练、刷新持久化、计时、历史、曲线与离线", async
   ).toHaveAttribute("aria-pressed", "true");
   await page.waitForTimeout(300);
   await page.reload();
+  await expect(page.locator(".connection")).toContainText("离线已就绪");
   await expect(
     page.getByRole("spinbutton", { name: "杠铃深蹲第1组重量", exact: true }),
   ).toHaveValue("67.5");

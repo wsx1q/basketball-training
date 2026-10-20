@@ -67,6 +67,7 @@ function App() {
     [message, setMessage] = useState(""),
     [error, setError] = useState(""),
     [online, setOnline] = useState(navigator.onLine),
+    [cacheReady, setCacheReady] = useState(false),
     [now, setNow] = useState(Date.now()),
     [restPaused, setRestPaused] = useState<number | null>(null),
     [restore, setRestore] = useState<State | null>(null),
@@ -84,6 +85,10 @@ function App() {
   } = useRegisterSW({
     onRegisterError: () => setError("离线缓存注册失败，请联网刷新重试。"),
   });
+  useEffect(() => {
+    if ("serviceWorker" in navigator)
+      void navigator.serviceWorker.ready.then(() => setCacheReady(true));
+  }, []);
   useEffect(() => {
     readState()
       .then((s) => {
@@ -311,7 +316,11 @@ function App() {
             <span className={"connection " + (!online ? "offline" : "")}>
               {online ? <Wifi size={14} /> : <WifiOff size={14} />}
               <span>
-                {offlineReady ? "离线已就绪" : online ? "在线" : "离线"}
+                {!online
+                  ? "离线"
+                  : offlineReady || cacheReady
+                    ? "离线已就绪"
+                    : "在线"}
               </span>
             </span>
             <span className="avatar">C</span>
